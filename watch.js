@@ -2,7 +2,8 @@ const spawn = require("child_process").spawn;
 
 function cmd(program, args) {
   console.log("CMD: ", program, args);
-  const p = spawn(program, args.flat());
+  // On Windows, tsc/http-server are .cmd scripts that need a shell to start.
+  const p = spawn(program, args.flat(), { shell: process.platform === "win32" });
 
   p.stdout.on("data", (data) => process.stdout.write(data));
   p.stderr.on("data", (data) => process.stderr.write(data));

@@ -245,6 +245,23 @@ function castRay(scene, p1, p2) {
     }
     return p2;
 }
+// Average color of a textured tile, cached so the minimap stays cheap.
+const tileStyleCache = new WeakMap();
+function averageTileStyle(tile) {
+    let style = tileStyleCache.get(tile);
+    if (style === undefined) {
+        let r = 0, g = 0, b = 0, n = 0;
+        for (let i = 0; i < tile.data.length; i += 16) {
+            r += tile.data[i + 0];
+            g += tile.data[i + 1];
+            b += tile.data[i + 2];
+            n += 1;
+        }
+        style = `rgb(${Math.floor(r / n)},${Math.floor(g / n)},${Math.floor(b / n)})`;
+        tileStyleCache.set(tile, style);
+    }
+    return style;
+}
 function renderMinimap(ctx, player, position, size, scene) {
     ctx.save();
     const gridSize = scene.size();
@@ -261,7 +278,8 @@ function renderMinimap(ctx, player, position, size, scene) {
                 ctx.fillRect(x, y, 1, 1);
             }
             else if (cell instanceof ImageData) {
-                // TODO : Render ImageData Tiles
+                ctx.fillStyle = averageTileStyle(cell);
+                ctx.fillRect(x, y, 1, 1);
             }
         }
     }
@@ -366,13 +384,16 @@ function renderWallsToImageData(imageData, player, scene) {
             const y2 = Math.floor(y1 + stripHeight);
             const by1 = Math.max(0, y1);
             const by2 = Math.min(SCREEN_HEIGHT - 1, y2);
+            // Distance shading (2 / distance), capped at 1 so walls closer than
+            // 2 units keep their texture colors instead of saturating to white.
+            const shade = Math.min((1 / v.dot(d)) * 2, 1);
             for (let y = by1; y < by2; ++y) {
                 const tx = Math.floor(u * cell.width);
                 const ty = Math.floor(((y - y1) / Math.ceil(stripHeight)) * cell.height);
                 const destP = (y * SCREEN_WIDTH + x) * 4;
-                imageData.data[destP + 0] = (cell.data[(ty * cell.width + tx) * 4 + 0] / v.dot(d)) * 2;
-                imageData.data[destP + 1] = (cell.data[(ty * cell.width + tx) * 4 + 1] / v.dot(d)) * 2;
-                imageData.data[destP + 2] = (cell.data[(ty * cell.width + tx) * 4 + 2] / v.dot(d)) * 2;
+                imageData.data[destP + 0] = cell.data[(ty * cell.width + tx) * 4 + 0] * shade;
+                imageData.data[destP + 1] = cell.data[(ty * cell.width + tx) * 4 + 1] * shade;
+                imageData.data[destP + 2] = cell.data[(ty * cell.width + tx) * 4 + 2] * shade;
                 imageData.data[destP + 3] = cell.data[(ty * cell.width + tx) * 4 + 3];
             }
         }
@@ -422,110 +443,33 @@ function canPlayerGoThere(scene, newPosition) {
     }
     return true;
 }
-(async () => {
-    const game = document.getElementById("game");
-    if (game === null)
-        throw new Error("No canvas with id 'game' is found");
-    const ctx = game.getContext("2d");
-    const factor = 80;
-    game.width = 16 * factor;
-    game.height = 9 * factor;
-    if (ctx === null)
-        throw new Error("2d context is not supported ");
-    ctx.imageSmoothingEnabled = false;
-    const backImageData = new ImageData(SCREEN_WIDTH, SCREEN_HEIGHT);
-    const backCanvas = new OffscreenCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
-    const backCtx = backCanvas.getContext("2d");
-    if (backCtx === null)
-        throw new Error("2D context is not supported");
-    backCtx.imageSmoothingEnabled = false;
-    const [wall1, wall2, wall3] = await Promise.all([
-        loadImageData("assets/wlftex/eagle.png").catch(() => RGBA.purple()),
-        loadImageData("assets/wlftex/mossy.png").catch(() => RGBA.purple()),
-        loadImageData("assets/wlftex/greystone.png").catch(() => RGBA.purple()),
-    ]);
-    const scene = new Scene([
-        [null, null, wall1, wall2, null, null, null, null, null],
-        [null, null, null, wall3, null, null, null, null, null],
-        [null, wall1, wall2, wall1, null, null, null, null, null],
-        [null, null, null, null, null, null, null, null, null],
-        [null, null, null, null, null, null, null, null, null],
-        [null, null, null, null, null, null, null, null, null],
-        [null, null, null, null, null, null, null, null, null],
-    ]);
-    const player = new Player(scene.size().mul(new Vector2(0.7, 0.63)), Math.PI * 1.25);
-    let movingForword = false;
-    let movingBackword = false;
-    let turningLeft = false;
-    let turningRight = false;
-    window.addEventListener("keydown", (e) => {
-        if (!e.repeat) {
-            switch (e.code) {
-                case "KeyW":
-                    movingForword = true;
-                    break;
-                case "KeyS":
-                    movingBackword = true;
-                    break;
-                case "KeyA":
-                    turningLeft = true;
-                    break;
-                case "KeyD":
-                    turningRight = true;
-                    break;
-            }
-        }
-    });
-    window.addEventListener("keyup", (e) => {
-        if (!e.repeat) {
-            switch (e.code) {
-                case "KeyW":
-                    movingForword = false;
-                    break;
-                case "KeyS":
-                    movingBackword = false;
-                    break;
-                case "KeyA":
-                    turningLeft = false;
-                    break;
-                case "KeyD":
-                    turningRight = false;
-                    break;
-            }
-        }
-    });
-    let prevTimestamp = 0;
-    const frame = (timestamp) => {
-        const deltaTime = (timestamp - prevTimestamp) / 1000;
-        prevTimestamp = timestamp;
-        let velocity = Vector2.zero();
-        let angular_velocity = 0.0;
-        if (movingForword) {
-            velocity = velocity.add(Vector2.fromAngle(player.direction).scale(PLAYER_SPEED));
-        }
-        if (movingBackword) {
-            velocity = velocity.sub(Vector2.fromAngle(player.direction).scale(PLAYER_SPEED));
-        }
-        if (turningLeft) {
-            angular_velocity -= Math.PI;
-        }
-        if (turningRight) {
-            angular_velocity += Math.PI;
-        }
-        player.direction += angular_velocity * deltaTime;
-        const nx = player.position.x + velocity.x * deltaTime;
-        if (canPlayerGoThere(scene, new Vector2(nx, player.position.y)))
-            player.position.x = nx;
-        const ny = player.position.y + velocity.y * deltaTime;
-        if (canPlayerGoThere(scene, new Vector2(player.position.x, ny)))
-            player.position.y = ny;
-        renderGameIntoImageData(ctx, backCtx, backImageData, deltaTime, player, scene);
-        window.requestAnimationFrame(frame);
-    };
-    window.requestAnimationFrame((timestamp) => {
-        prevTimestamp = timestamp;
-        window.requestAnimationFrame(frame);
-    });
-})();
+// Movement logic extracted from the original frame loop (same math):
+// move along the view direction, turn at `turnSpeed` rad/s and slide
+// along walls by testing each axis separately.
+function stepPlayer(scene, player, controls, deltaTime, speed = PLAYER_SPEED, turnSpeed = Math.PI) {
+    let velocity = Vector2.zero();
+    let angular_velocity = 0.0;
+    if (controls.forward) {
+        velocity = velocity.add(Vector2.fromAngle(player.direction).scale(speed));
+    }
+    if (controls.backward) {
+        velocity = velocity.sub(Vector2.fromAngle(player.direction).scale(speed));
+    }
+    if (controls.turnLeft) {
+        angular_velocity -= turnSpeed;
+    }
+    if (controls.turnRight) {
+        angular_velocity += turnSpeed;
+    }
+    player.direction += angular_velocity * deltaTime;
+    const nx = player.position.x + velocity.x * deltaTime;
+    if (canPlayerGoThere(scene, new Vector2(nx, player.position.y)))
+        player.position.x = nx;
+    const ny = player.position.y + velocity.y * deltaTime;
+    if (canPlayerGoThere(scene, new Vector2(player.position.x, ny)))
+        player.position.y = ny;
+}
+// The game bootstrap (canvas setup, asset loading, input and main loop) lives in
+// game/main.ts. The original demo scene is kept there as the "Mode libre".
 // TODO : trying lighting with normal maps that come with some of the assests
 //# sourceMappingURL=index.js.map
