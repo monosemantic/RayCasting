@@ -264,45 +264,6 @@ button { font: inherit; color: inherit; }
 @keyframes riseIn { from { opacity: 0; transform: translateY(14px) scale(0.98); } }
 #screen-briefing, #screen-pause, #screen-victory, #screen-defeat, #screen-quit { background: rgba(6, 8, 9, 0.62); backdrop-filter: blur(3px); }
 
-.logo {
-  font-family: var(--display);
-  font-size: clamp(40px, 8vw, 96px);
-  line-height: 0.95;
-  margin: 0;
-  letter-spacing: 0.03em;
-  background: url("../assets/wlftex/greystone.png") 0 0 / 48px 48px;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.25);
-  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.8)) drop-shadow(0 0 22px rgba(95, 179, 179, 0.35));
-}
-.tagline {
-  margin: 8px 0 0;
-  font-size: clamp(14px, 1.8vw, 20px);
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  color: var(--rose);
-}
-
-.loading { text-align: center; width: min(520px, 90vw); }
-.bar { height: 8px; background: rgba(255, 255, 255, 0.08); border-radius: 99px; margin: 28px 0 10px; overflow: hidden; }
-.bar > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--teal), var(--gold)); transition: width 0.2s; }
-
-/* Main menu */
-#screen-menu { flex-direction: column; align-items: stretch; justify-content: center; padding: 4vh 6vw; }
-.menu-layout {
-  display: grid;
-  grid-template-columns: minmax(280px, 420px) 1fr minmax(220px, 280px);
-  grid-template-areas: "brand brand brand" "buttons . stats";
-  gap: 4vh 3vw;
-  align-items: end;
-}
-.menu-brand { grid-area: brand; }
-.menu-buttons { grid-area: buttons; display: flex; flex-direction: column; gap: 10px; }
-.menu-stats { grid-area: stats; }
-.menu-controls { color: var(--muted); font-size: 13px; margin: 4vh 0 0; }
-
 .btn {
   position: relative;
   display: flex;
@@ -321,10 +282,8 @@ button { font: inherit; color: inherit; }
   transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s, background 0.15s;
   text-align: center;
 }
-.menu-buttons .btn { align-items: flex-start; text-align: left; border-left: 3px solid var(--teal-dark); }
 .btn small { font-weight: 500; font-size: 12px; color: var(--muted); letter-spacing: 0; }
 .btn:hover:not(:disabled), .btn:focus-visible { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal), 0 8px 24px rgba(0, 0, 0, 0.4); outline: none; }
-.menu-buttons .btn:hover:not(:disabled) { transform: translateX(6px); border-left-color: var(--teal); }
 .btn:active:not(:disabled) { transform: scale(0.98); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn.primary {
@@ -333,7 +292,6 @@ button { font: inherit; color: inherit; }
   border-color: #ffe28a;
 }
 .btn.primary small { color: rgba(36, 26, 5, 0.75); }
-.menu-buttons .btn.primary { border-left-color: #fff1b8; font-size: 19px; padding: 16px 22px; }
 .btn.primary:hover:not(:disabled) { box-shadow: 0 0 0 1px #ffe28a, 0 0 24px rgba(245, 197, 66, 0.45); }
 .btn.ghost { background: rgba(20, 24, 26, 0.6); }
 .btn.small { padding: 7px 14px; font-size: 14px; flex-direction: row; }
@@ -534,31 +492,211 @@ button { font: inherit; color: inherit; }
 
 .modal { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.6); padding: 16px; }
 
+/* ---------- Main menu & loading ----------
+   Layout borrowed from the Wolfenstein 3D (1992) menu: crimson backdrop, black title band,
+   a single bevelled box with a plain text list and an animated cursor, a status bar in the
+   style of the in-game HUD, and the key help line at the bottom. */
+.retro-screen {
+  --r-bg: rgba(122, 0, 0, 0.84);
+  --r-box: #580000;
+  --r-hi: #b41414;
+  --r-lo: #2c0000;
+  --r-item: #a4a4a4;
+  --r-sel: #fcfcfc;
+  --r-gold: #fcd400;
+  --r-blue: #0a1c64;
+  --r-blue-hi: #2c48b4;
+  --r-blue-lo: #020a2c;
+  --pixel: "Pixelify Sans", "Lucida Console", ui-monospace, monospace;
+  --pixel-title: "Press Start 2P", "Lucida Console", ui-monospace, monospace;
+  padding: 0;
+  background: var(--r-bg);
+}
+.retro-screen.active { display: block; }
+.retro-screen.active > * { animation: none; }
+
+.retro {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(12px, 2.6vh, 26px);
+  font-family: var(--pixel);
+}
+
+.retro-banner {
+  align-self: stretch;
+  background: #000;
+  /* red rule, then black rule, under the band */
+  box-shadow: 0 4px 0 var(--r-hi), 0 8px 0 #000;
+  margin-bottom: 8px;
+  padding: clamp(14px, 3.2vh, 30px) 16px clamp(12px, 2.6vh, 24px);
+  text-align: center;
+}
+.retro-title {
+  margin: 0;
+  font-family: var(--pixel-title);
+  font-weight: 400;
+  font-size: clamp(22px, 5.2vw, 56px);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: #d4d4d4;
+  text-shadow: 0.09em 0.09em 0 #7c0000;
+}
+.retro-sub {
+  margin: 0.9em 0 0;
+  font-size: clamp(11px, 1.5vw, 16px);
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--r-gold);
+}
+
+.retro-box {
+  width: min(460px, calc(100% - 32px));
+  margin-top: auto;
+  padding: clamp(8px, 1.8vh, 16px) 18px;
+  background: var(--r-box);
+  border: 3px solid;
+  border-color: var(--r-lo) var(--r-hi) var(--r-hi) var(--r-lo);
+}
+.retro-list { display: flex; flex-direction: column; }
+.retro-item {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0.26em 0 0.26em 2em;
+  border: 0;
+  background: none;
+  font-family: var(--pixel);
+  font-weight: 700;
+  font-size: clamp(17px, 2.1vw, 24px);
+  text-align: left;
+  color: var(--r-item);
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+}
+.retro-item:focus, .retro-item:focus-visible { outline: none; }
+.retro-item.selected { color: var(--r-sel); }
+/* Cursor: a pixel coin that spins in four frames. */
+.retro-item.selected::before {
+  content: "";
+  position: absolute;
+  left: 0.3em;
+  top: 50%;
+  width: 0.95em;
+  height: 0.95em;
+  margin-top: -0.5em;
+  background: var(--r-gold);
+  box-shadow: inset -0.16em -0.16em 0 #a86f12, inset 0.16em 0.16em 0 #fff09a;
+  clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
+  animation: coinSpin 0.8s steps(1) infinite;
+}
+@keyframes coinSpin {
+  0% { transform: scaleX(1); }
+  25% { transform: scaleX(0.55); }
+  50% { transform: scaleX(0.15); }
+  75% { transform: scaleX(0.55); }
+}
+.retro-desc {
+  min-height: 1.5em;
+  margin: 0.5em 0 0;
+  padding-top: 0.55em;
+  border-top: 2px solid var(--r-lo);
+  font-size: clamp(12px, 1.3vw, 15px);
+  color: #e88a8a;
+}
+
+.retro-status {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  width: min(620px, calc(100% - 32px));
+  padding: 4px;
+  background: var(--r-blue);
+  border: 3px solid;
+  border-color: var(--r-blue-hi) var(--r-blue-lo) var(--r-blue-lo) var(--r-blue-hi);
+}
+.retro-status .cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px 8px;
+  border: 2px solid;
+  border-color: var(--r-blue-lo) var(--r-blue-hi) var(--r-blue-hi) var(--r-blue-lo);
+  min-width: 0;
+}
+.retro-status .cell > span { font-size: clamp(10px, 1.1vw, 13px); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #9cb0f4; }
+.retro-status strong {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-family: var(--pixel-title);
+  font-weight: 400;
+  font-size: clamp(11px, 1.5vw, 17px);
+  color: #fcfcfc;
+  text-shadow: 2px 2px 0 #000;
+  white-space: nowrap;
+}
+.retro-status .coin-icon { border-radius: 0; clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%); background: var(--r-gold); box-shadow: inset -0.15em -0.15em 0 #a86f12; }
+.pips { display: flex; gap: 3px; }
+.pips i { width: 7px; height: 7px; background: var(--r-blue-lo); box-shadow: inset 1px 1px 0 #000; }
+.pips i.on { background: var(--r-gold); box-shadow: inset -1px -1px 0 #a86f12; }
+
+.retro-help {
+  align-self: stretch;
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 2.4em;
+  padding: 10px 16px;
+  background: #000;
+  box-shadow: 0 -4px 0 var(--r-hi);
+  font-size: clamp(12px, 1.3vw, 15px);
+  font-weight: 700;
+  color: var(--r-gold);
+}
+.retro-help kbd {
+  display: inline-block;
+  margin-right: 0.3em;
+  padding: 0 0.35em;
+  font-family: inherit;
+  color: #000;
+  background: var(--r-item);
+  box-shadow: inset -2px -2px 0 #666;
+}
+
+/* Loading */
+.retro-box.loading { margin-bottom: auto; text-align: center; color: var(--r-item); font-weight: 700; }
+.retro-box.loading p { margin: 0 0 12px; }
+.retro-bar { height: 18px; padding: 3px; background: var(--r-lo); border: 2px solid; border-color: #000 var(--r-hi) var(--r-hi) #000; }
+.retro-bar > div {
+  height: 100%;
+  width: 0;
+  background: repeating-linear-gradient(90deg, var(--r-gold) 0 10px, transparent 10px 13px);
+}
+
+@media (max-width: 520px) {
+  .retro-status { grid-template-columns: repeat(2, 1fr); }
+  .retro-help { gap: 6px 1.4em; }
+}
+@media (max-height: 600px) {
+  .retro { gap: 10px; }
+  .retro-banner { padding: 10px 16px; }
+  .retro-sub { display: none; }
+  .retro-item { font-size: 16px; padding: 0.14em 0 0.14em 2em; }
+  .retro-status .cell { flex-direction: row; justify-content: center; padding: 4px; }
+  .pips { display: none; }
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 900px) {
-  .menu-layout { grid-template-columns: 1fr; grid-template-areas: "brand" "buttons" "stats"; align-items: start; }
-  #screen-menu { justify-content: flex-start; }
   .map-layout { grid-template-columns: 1fr; }
   .page-head { grid-template-columns: auto 1fr; }
   .page-head .wallet { grid-column: 1 / -1; justify-self: start; }
   .stars-goals, .result-stats { grid-template-columns: 1fr; }
-}
-@media (max-height: 560px) and (orientation: landscape) {
-  .screen { align-items: flex-start; }
-  .logo { font-size: 40px; }
-  #screen-menu { padding: 12px 24px; justify-content: center; }
-  .menu-layout {
-    grid-template-columns: minmax(240px, 1fr) minmax(200px, 300px);
-    grid-template-areas: "buttons brand" "buttons stats";
-    gap: 12px 24px;
-    align-items: start;
-  }
-  .menu-buttons { gap: 6px; }
-  .menu-buttons .btn { padding: 7px 14px; font-size: 14px; }
-  .menu-buttons .btn.primary { padding: 9px 14px; font-size: 16px; }
-  .menu-stats { padding: 12px 16px; }
-  .menu-stats .stat { padding: 4px 0; font-size: 14px; }
-  .menu-controls { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

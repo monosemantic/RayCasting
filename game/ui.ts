@@ -65,6 +65,7 @@ class UI {
     fps: "",
   };
   private hintTimer = 0;
+  private menuIndex = 0;
   mapSelection = 0;
 
   constructor(save: SaveSystem) {
@@ -76,6 +77,10 @@ class UI {
     document.querySelectorAll<HTMLElement>(".screen").forEach((s) => {
       s.classList.toggle("active", s.id === `screen-${id}`);
     });
+    if (id === "menu") {
+      this.menuSelect(this.menuIndex);
+      return;
+    }
     const active = id === null ? null : document.getElementById(`screen-${id}`);
     const focus = active?.querySelector<HTMLElement>(".btn.primary:not(:disabled)");
     if (focus) focus.focus({ preventScroll: true });
@@ -91,26 +96,54 @@ class UI {
   }
 
   // ----- Main menu -----
+  // Keyboard-driven list: one selected item, moved by the arrows or the mouse.
+  // The selection is kept between visits, so "back" returns to the same item.
+  private menuItems(): HTMLButtonElement[] {
+    return Array.from(document.querySelectorAll<HTMLButtonElement>("#menu-list .retro-item"));
+  }
+
+  menuSelect(index: number) {
+    const items = this.menuItems();
+    if (items.length === 0) return;
+    this.menuIndex = (index + items.length) % items.length;
+    items.forEach((item, i) => item.classList.toggle("selected", i === this.menuIndex));
+    const item = items[this.menuIndex]!;
+    if (document.activeElement !== item) item.focus({ preventScroll: true });
+    $("menu-desc").textContent = item.dataset["desc"] ?? "";
+  }
+
+  menuMove(step: number) {
+    this.menuSelect(this.menuIndex + step);
+  }
+
+  menuIndexOf(item: HTMLElement): number {
+    return this.menuItems().indexOf(item as HTMLButtonElement);
+  }
+
+  menuActivate() {
+    this.menuItems()[this.menuIndex]?.click();
+  }
+
   renderMenu() {
     const save = this.save;
     const run = save.data.run;
     const label = $("menu-continue-label");
-    const sub = $("menu-continue-sub");
+    const item = $("menu-continue");
     const runIndex = run === null ? -1 : LEVELS.findIndex((l) => l.id === run.levelId);
     if (run !== null && runIndex >= 0) {
       label.textContent = "Continuer";
-      sub.textContent = `Reprendre « ${LEVELS[runIndex]!.name} » — ${formatTime(run.timeLeft)} restantes`;
+      item.dataset["desc"] = `Reprendre « ${LEVELS[runIndex]!.name} » — ${formatTime(run.timeLeft)} restantes`;
     } else {
       const next = save.nextLevelIndex();
-      label.textContent = save.completedCount() === 0 ? "Jouer" : "Continuer";
-      sub.textContent = `Niveau ${next + 1} — ${LEVELS[next]!.name}`;
+      label.textContent = save.completedCount() === 0 ? "Nouvelle partie" : "Continuer";
+      item.dataset["desc"] = `Niveau ${next + 1} — ${LEVELS[next]!.name}`;
     }
     const done = save.completedCount();
-    $("stat-levels").textContent = `${done} / ${LEVELS.length}`;
-    $("stat-progress").style.width = `${(done / LEVELS.length) * 100}%`;
-    $("stat-stars").textContent = `${save.totalStars()} / ${LEVELS.length * 3}`;
+    $("stat-levels").textContent = `${done}/${LEVELS.length}`;
+    $("stat-progress").innerHTML = LEVELS.map((_, i) => `<i class="${i < done ? "on" : ""}"></i>`).join("");
+    $("stat-stars").textContent = `${save.totalStars()}/${LEVELS.length * 3}`;
     $("stat-gold").textContent = String(save.data.gold);
-    $("stat-upgrades").textContent = `${UPGRADES.filter((u) => save.hasUpgrade(u.id)).length} / ${UPGRADES.length}`;
+    $("stat-upgrades").textContent = `${UPGRADES.filter((u) => save.hasUpgrade(u.id)).length}/${UPGRADES.length}`;
     this.refreshWallets();
   }
 

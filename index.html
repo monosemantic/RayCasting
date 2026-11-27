@@ -4,6 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Raycasting</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@500;700&display=swap" />
     <link rel="stylesheet" href="game/style.css" />
   </head>
   <body>
@@ -54,43 +57,55 @@
     <div id="toasts"></div>
 
     <!-- Loading -->
-    <section class="screen active" id="screen-loading">
-      <div class="loading">
-        <h1 class="logo">RAYCASTING</h1>
-        <div class="bar"><div id="loading-bar"></div></div>
-        <p id="loading-text">Chargement des textures…</p>
+    <section class="screen active retro-screen" id="screen-loading">
+      <div class="retro">
+        <header class="retro-banner">
+          <h1 class="retro-title">RAYCASTING</h1>
+        </header>
+        <div class="retro-box loading">
+          <p id="loading-text">Chargement des textures…</p>
+          <div class="retro-bar"><div id="loading-bar"></div></div>
+        </div>
       </div>
     </section>
 
-    <!-- Main menu -->
-    <section class="screen" id="screen-menu">
-      <div class="menu-layout">
-        <div class="menu-brand">
-          <h1 class="logo">RAYCASTING</h1>
-          <p class="tagline">Les Couloirs de la Forteresse</p>
+    <!-- Main menu — layout inspired by the Wolfenstein 3D (1992) menu -->
+    <section class="screen retro-screen" id="screen-menu">
+      <div class="retro">
+        <header class="retro-banner">
+          <h1 class="retro-title">RAYCASTING</h1>
+          <p class="retro-sub">Les Couloirs de la Forteresse</p>
+        </header>
+
+        <div class="retro-box">
+          <nav class="retro-list" id="menu-list">
+            <button class="retro-item" data-action="continue" id="menu-continue"><span id="menu-continue-label">Jouer</span></button>
+            <button class="retro-item" data-action="open-levels" data-desc="Rejouer un niveau déjà débloqué">Sélection des niveaux</button>
+            <button class="retro-item" data-action="open-map" data-desc="Les trois zones de la forteresse">Carte du monde</button>
+            <button class="retro-item" data-action="open-shop" data-desc="Dépenser l'or en améliorations">Boutique</button>
+            <button class="retro-item" data-action="open-settings" data-desc="Son, rotation, FPS, tactile">Paramètres</button>
+            <button class="retro-item" data-action="sandbox" data-desc="Le prototype original, sans règles">Mode libre</button>
+            <button class="retro-item" data-action="quit" data-desc="La progression est déjà sauvegardée">Quitter</button>
+          </nav>
+          <p class="retro-desc" id="menu-desc"></p>
         </div>
-        <nav class="menu-buttons">
-          <button class="btn primary" data-action="continue">
-            <span id="menu-continue-label">Jouer</span>
-            <small id="menu-continue-sub"></small>
-          </button>
-          <button class="btn" data-action="open-levels">Sélection des niveaux</button>
-          <button class="btn" data-action="open-map">Carte du monde</button>
-          <button class="btn" data-action="open-shop">Boutique</button>
-          <button class="btn" data-action="open-settings">Paramètres</button>
-          <button class="btn ghost" data-action="sandbox">Mode libre <small>prototype original</small></button>
-          <button class="btn ghost" data-action="quit">Quitter</button>
-        </nav>
-        <aside class="menu-stats panel">
-          <h3>Progression</h3>
-          <div class="stat"><span>Niveaux terminés</span><strong id="stat-levels">0 / 0</strong></div>
-          <div class="progress"><div id="stat-progress"></div></div>
-          <div class="stat"><span>Étoiles</span><strong id="stat-stars">0</strong></div>
-          <div class="stat"><span>Or</span><strong><span class="coin-icon"></span> <span id="stat-gold">0</span></strong></div>
-          <div class="stat"><span>Améliorations</span><strong id="stat-upgrades">0</strong></div>
-        </aside>
+
+        <div class="retro-status">
+          <div class="cell">
+            <span>Niveaux</span><strong id="stat-levels">0/0</strong>
+            <div class="pips" id="stat-progress"></div>
+          </div>
+          <div class="cell"><span>Étoiles</span><strong id="stat-stars">0</strong></div>
+          <div class="cell"><span>Or</span><strong><i class="coin-icon"></i><span id="stat-gold">0</span></strong></div>
+          <div class="cell"><span>Bonus</span><strong id="stat-upgrades">0</strong></div>
+        </div>
+
+        <footer class="retro-help">
+          <span><kbd>↑</kbd><kbd>↓</kbd> Choisir</span>
+          <span><kbd>Entrée</kbd> Valider</span>
+          <span><kbd>Échap</kbd> Retour</span>
+        </footer>
       </div>
-      <p class="menu-controls">W / S : avancer, reculer · A / D : tourner · Échap : pause · M : minimap</p>
     </section>
 
     <!-- Level selection -->

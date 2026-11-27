@@ -55,6 +55,9 @@ class Sfx {
             case "click":
                 this.tone(520, 0, 0.06, "square", 0.15);
                 break;
+            case "move":
+                this.tone(330, 0, 0.035, "square", 0.1);
+                break;
             case "coin":
                 this.tone(988, 0, 0.08, "square", 0.25);
                 this.tone(1319, 0.07, 0.18, "square", 0.25);

@@ -416,9 +416,26 @@ class Game {
             this.back();
         }
     }
+    // Up / down (arrows, W / S) move the cursor of the main menu list.
+    onMenuKey(code) {
+        const top = this.screens[this.screens.length - 1];
+        if (this.mode !== "menu" || top !== "menu" || !document.getElementById("modal").classList.contains("hidden"))
+            return false;
+        const step = code === "ArrowUp" || code === "KeyW" ? -1 : code === "ArrowDown" || code === "KeyS" ? 1 : 0;
+        if (step === 0)
+            return false;
+        this.sfx.unlock();
+        this.ui.menuMove(step);
+        this.sfx.play("move");
+        return true;
+    }
     onEnter() {
         const top = this.screens[this.screens.length - 1];
-        if (top === "briefing")
+        if (!document.getElementById("modal").classList.contains("hidden"))
+            return;
+        if (top === "menu")
+            this.ui.menuActivate();
+        else if (top === "briefing")
             this.startLevel();
         else if (top === "victory")
             document.getElementById("win-next").click();
@@ -548,6 +565,10 @@ function bindInput(game) {
             e.preventDefault();
             return;
         }
+        if (game.onMenuKey(e.code)) {
+            e.preventDefault();
+            return;
+        }
         if (e.repeat)
             return;
         switch (e.code) {
@@ -595,6 +616,17 @@ function bindInput(game) {
         if (target === null || target.disabled)
             return;
         void game.handleAction(target.dataset["action"], target);
+    });
+    // Main menu: the cursor follows the mouse and keyboard focus.
+    document.querySelectorAll("#menu-list .retro-item").forEach((item) => {
+        const select = () => {
+            if (item.classList.contains("selected"))
+                return;
+            game.ui.menuSelect(game.ui.menuIndexOf(item));
+            game.sfx.play("move");
+        };
+        item.addEventListener("mouseenter", select);
+        item.addEventListener("focus", select);
     });
     document.getElementById("hud-pause").addEventListener("click", () => game.pause());
     document.querySelectorAll("#screen-settings input, #screen-settings select").forEach((el) => el.addEventListener("input", () => game.onSettingChanged()));
